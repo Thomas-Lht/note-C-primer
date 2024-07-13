@@ -480,3 +480,104 @@ public:
 Sales_data item1(null_book);      //正确：直接初始化
 Sales_data item2 = null_book;     //错误：不能将explicit构造函数用于拷贝形式的初始化过程
 ```
+### 聚合类
+**聚合类**使用户可以直接访问其成员，并具有特殊的初始化语法形式。当一个类满足如下条件是时，我们说他是聚合的：
+- 所有成员都是public的
+- 没有定义任何构造函数。
+- 没有类内的初始值
+- 没有基类，也没有virtual的函数
+```c++
+struct Data{
+    int ival;
+    string s;
+}
+```
+我们可以提过那个一个花括号的成员初始值列表，并与哦那个它初始化聚合类的数据成员：
+```c++
+Data val1 = { 0, "Anna"};
+```
+初始值的顺序必须与声明一致
+值得注意的是，显式地初始化的类的对象存在三个明显的缺点：
+- 要求类的所有成员都是public的
+- 将正确初始化每个对象的每个成员的重任交给了类的用户。因为用户很容易忘记某个初始值，或者提供一个不恰当的初始值，所以这样的初始化过程冗长乏味且容易出错。
+- 添加或删除一个成员之后，所有的初始化语句都需要更新。
+### 字面值常量类
+数据成员都是字面值类型的聚合类是字面值常量类。如果一个类不是聚会类，但它符合下述要求，则它也是字面值常量类：
+- 数据成员都必须是字面类型
+- 类内必须至少有一个 constexpr构造函数
+- 如果一个数据成员含有类内初始，则内置类型成员必须是一条常量表达式或者如果成员属于某种类类型的，则初始值必须使用成员自己的constexpr构造函数
+- 类必需使用析构函数的默认定义，该成员负责销毁类的对象
+```c++
+class Debug {
+public:
+    constexpr Debug(bool b = true): hw(b), io(b), other(b) {}
+    constexpr Debug(bool h, bool i, bool o):
+        hw(h), io(i), other(o) {}
+    constexpr bool any() {return hw || io || other;}
+    void set_io(bool b) {io = b;}
+    void set_hw(bool b) {hw = b;}
+    void set_other(bool b) {other = b;}
+private:
+    bool hw;
+    bool io;
+    bool other;
+}
+```
+## 7.6 类的静态成员
+**声明静态成员**
+我们通过在成员声明之前加上关键字static使得其与类关联在一起。
+```c++
+class Account {
+public:
+    void calculate() { amount += amount * interestRate; }
+    static double rate() { return interestRate; }
+    static void rate(double);
+private:
+    std::string owner;
+    double amount;
+    static double interestRate;
+    static double initRate();
+};
+```
+类的静态成员存在于任何对象之外，对象中不包含任何与静态数据成员有关的数据。
+静态成员函数也不与任何对象绑定在一起，他们不包含this指针。
+**使用类的静态成员**
+使用作用域符直接访问静态成员：
+```c++
+double r;
+r = Account::rate();
+```
+虽然静态类成员不属于类的某个对象，但我们仍然可以使用类的对象、引用或指针来访问静态成员：
+```c++
+Account ac1;
+Account *ac2 = &ac1;
+r = ac1.rate();
+r = ac2->rate();
+```
+**定义静态成员**
+==和类的所有成员一样，当我们指向类外部的静态成员时，必须指明长远所属的类名。static关键字则只出现在类内部的声明语句中。==
+想要确保对象只定义一次，最好的办法是把静态数据成员的定义与其他非内敛函数的定义放在一个文件中。
+**静态类成员的类内初始化**  
+即使一个常量静态成员在类内部被初始化了，通常情况下也应该在类的外部定义一下该成员。
+# 第8章 IO库
+IO库设施：
+- istream类型，提供输入操作
+- ostream类型，提供输出操作
+- cin，一个istream对象，从标准输入读取数据
+- cout，一个ostream对象，向标准输出写入数据
+- cerr，一个ostream对象，通常用于输出程序错误信息，写入到标准错误
+- \>\>运算符，用来从一个istream对象读取输入数据
+- <<运算符，用来向一个ostream对象写入输出数据
+- getline函数，从一个给定的istream对象中读取一行数据，存入一个给定的string对象中
+## 8.1 IO类
+| 头文件 | 类型 |
+| --- | --- |
+|iosteam| istream,wistream从流读取数据<br>ostream,wostream向流写入数据<br>iostream,wiostream读写流 |
+|fstream|ifstream,ofstream从文件读取数据<br>fstream,wfstream向文件写入数据<br>fsream,wfsream读写文件 |
+|sstream|istringstream,ostringstream从string读取数据<br>stringstream,wstringstream向string写入数据<br>strstream,wstrstream读写string |
+### IO对象无拷贝或赋值
+```c++
+
+```
+
+
