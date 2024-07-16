@@ -654,3 +654,71 @@ IO库设施：
 - 如果begin与end相等，则范围为空
 - 如果begin与end不等，则范围至少包含一个元素，且begin指向该范围中的第一个元素
 - 我们可以对begin递增若干次，使得begin==end
+```c++
+while(begin != end)
+{
+    *begin = val;       //正确:范围非空，因此begin指向一个元素
+    ++begin;            //移动迭代器，获取下一个元素
+}
+```
+### 容器类型成员
+类型别名
+```c++
+// iter是通过list<string>定义的一个迭代器类型
+list<string>::iterator iter;
+//count是通过vector<int>定义的一份difference_type类型
+vector<int>::difference_type coount;
+```
+### begin和end成员
+begin和end操作生成指向容器中第一个元素和尾元素之后位置的迭代器。
+```c++
+list<string> a = {"Milton", "Shakespeare", "Austen"};
+auto it1 = a.begin();   //list<string>::iterator
+auto it2 = a.rbegin();  //list<string>::reverse_iterator
+auto it3 = a.cbegin();  //list<string>::const_iterator
+auto it4 = a.crbegin(); //list<string>::const_reverse_string
+```
+==当不需要访问时，应使用cbegin和cend==
+### 容器定义和初始化
+|容器定义和初始化||
+|---|---|
+|C c;|默认构造函数。如果C是一个array，则c中元素按默认方式初始化；否则c为空|
+|C c1(c2);<br>C c1=c2;|c1初始化为c2的拷贝,相同的容器类型，且保存的是相同的元素类型|
+|C c{a, b, c...}<br>C c={a, b, c...}|c初始化为初始化列表中元素的拷贝|
+|C c(b,e)|c初始化为迭代器b和e指定范围中的元素拷贝|
+|C seq(n)|seq包含n个元素，这些元素进行了值初始化|
+|C seq(n,t)|seq包含n 个初始化为值t的元素|
+
+==当将一个容器初始化为另一个容器的拷贝时，两个容器的容器类型和元素类型都必须相同==
+**标准库array具有固定大小**
+```c++
+array<int, 42>;     //类型为：保存42个int类型
+array<string, 10>;  //类型为：保存10个string数组
+```
+初始化array
+```c++
+array<int, 10> ia1;         //10个默认初始化的int
+array<int, 10> ia2 = {0,1,2,3,4,5,6,7,8,9};  //列表初始化
+array<int, 10> ia3 = {42};  //ia3[0]为42，剩余元素为0
+```
+### 赋值和swap
+|容器赋值运算||
+|---|---|
+|c1=c2 |将c1中的元素替换为c2中的拷贝|
+|c = {a,b,c...}|将c1中的元素替换为初始化列表中的元素拷贝|
+|swap(c1,c2)<br>c1.swap(c2)|交换c1和c2中的元素。c1和c2必须具有相同的类型。swap通常比从c2向c1拷贝元素快得多|
+|seq.assign(b,e)|将seq中的元素替换为迭代器b和e所表示的范围中的元素。|
+|seq.assign(il)|将seq中的元素替换为初始值列表il中的元素|
+|seq.assign(n,t)|将seq中的元素替换为n个值为t的元素|
+
+==赋值相关运算会导致指向左边容器内部的迭代器、引用和指针失效。而swap操作将容器内容交换不会导致容器的迭代器、引用和指针失效==
+### 容器大小操作
+成员函数size返回元素数目；empty当size为0时返回布尔值true，否则返回false；max_size返回一个大于或等于该类型容器所能容纳的最大素数元素的值。
+### 关系运算符
+- 如果两个容器具有相同大小且所有元素位置都两两对应，则两个容器相等
+- 如果两个容器大小不同，但较小容器中每个元素都等于较大容器中的对应元素，则较小的容器小于较大的容器
+- 如果两个容器不是另一个容器的前缀子序列，则他们的比较结果取决于第一个不相等的元素比较结果
+  
+## 9.3顺序容器操作
+### 向顺序容器添加元素
+
