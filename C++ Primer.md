@@ -586,7 +586,7 @@ IO库设施：
 
 
 # 第9章 顺序容器
-# 9.1顺序容器概述
+## 9.1顺序容器概述
 |顺序容器类型||
 |---|---|
 |vector|可变大小数组。支持快速随机访问。在尾部之外的位置插入或删除元素可能很慢|
@@ -781,4 +781,115 @@ if(!c.empty())
 |c.reverve(n)|分配至少能容纳n个元素的内存空间|
 
 ## 9.5额外的string操作
- 
+
+
+# 第13章 拷贝控制
+一个类通过定义五种特殊的成员函数来控制这些操作，包括:**拷贝构造函数、拷贝赋值运算符、移动构造函数、移动赋值运算符和析构函数**
+我们称这些操作为**拷贝控制操作**
+
+## 13.1拷贝、赋值与销毁
+### 拷贝构造函数
+```c++
+class Foo{
+public:
+    Foo();                   //默认构造函数
+    Foo(const Foo&);         //拷贝构造函数
+}
+```
+拷贝构造函数第一个参数必须是一个引用类型
+**合成拷贝构造函数**
+```c++
+class Sales_data {
+public:
+    //其他成员和构造函数的定义，如前
+    //与合成的拷贝构造函数等价的拷贝构造函数声明
+    Sales_data(const Sales_data&);
+private:
+    std::string bookNo;
+    int units_sold = 0;
+    double revenue = 0.0;
+};
+//与Sales_data的合成的拷贝构造函数等价
+Sales_data::Sales_data(const Sales_data &orig):
+    bookNo(orig.bookNo),        //使用string的拷贝构造函数
+    units_sold(orig.units_sold),//拷贝orig.units_sold
+    revenue(orig.revenue)       //拷贝orig.revenue
+    {   }                       //空函数体
+```
+
+**拷贝初始化**
+```c++
+string dots(10, '.');               //直接初始化
+string s(dots);                     //直接初始化
+string s2 = dots;                   //拷贝初始化
+string null_book = "9-999-99999-9";  //拷贝初始化
+string nines = string(10, '9');      //拷贝初始化
+```
+
+### 拷贝赋值运算符
+**重载赋值运算符**
+重载运算符本质上是函数，其名字由operator关键字后面接表示要定义的运算符的符号组成。
+```c++
+class Foo{
+public:
+    Foo& operator=(const Foo&);  //赋值运算符
+}
+```
+==赋值运算符通常应该返回一个指向其左侧运算对象的引用==
+**合成赋值运算符**
+```c++
+Sales_data&
+Sales_data::operator=(const Sales_data &rhs)
+{
+    bookNo = rhs.bookNo;            //调用string::operator=
+    units_sold = rhs.units_sold;    //使用内置的int赋值
+    revenue = rhs.revenue;          //使用内置的double赋值
+    return *this;                   //返回一个此对象的引用
+}
+```
+
+### 析构函数
+析构函数释放对象使用的资源，并销毁对象的非static数据成员。
+```c++
+class Foo {
+public:
+    ~Foo();  //析构函数
+}
+```
+由于析构函数不接受参数，因此它不能被重载。
+==隐式销毁一个内置指针类型的成员不会delete它所指的对象==
+
+**什么时候会调用析构函数**
+无论何时一个对象被销毁，就会自动调用其析构函数。
+- 变量在离开其作用域时被销毁
+- 当一个对象被销毁，其成员被销毁
+- 容器被销毁时，其元素销毁
+- 对于动态分配的对象，当对指向它的指针应用delete运算符时被销毁
+- 对于临时变量，当创建它的完整表达式结束时被销毁
+```c++
+{//新的作用域
+    //p和p2指向动态分配对象
+    Sales_data *p = new Sales_data;     //p是个内置指针
+    auto p2 = make_shared<Sales_data>(); //p2是个shared_ptr
+    Sales_data item(*p);                 //拷贝构造函数将*p拷贝到item中
+    vector<Sales_data> vec               //局部对象
+    vec.push_back(*p2);                 //拷贝p2指向的对象
+    delete p;                           //对p指向的对象执行析构操作
+}//推出局部作用域:对item、p2和vec调用析构函数
+ //销毁p2会递减其引用计数;如果引用计数变为0,对象被释放
+ //销毁vec会销毁它的元素
+```
+==当指向一个对象的引用或指针离开作用域时,析构函数不会执行==
+**合成析构函数**
+```c++
+class Sales_data {
+public:
+    //成员会被自动销毁,除此之外不需要做其他事情
+    ~Sales_data() { }
+};
+```
+### 三/五法则
+**需要析构函数的类也需要拷贝和赋值操作**
+
+
+
