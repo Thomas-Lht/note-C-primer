@@ -890,6 +890,42 @@ public:
 ```
 ### 三/五法则
 **需要析构函数的类也需要拷贝和赋值操作**
+==如果一个类需要自定义析构函数,几乎可以肯定它也需要自定义拷贝赋值运算符和拷贝构造函数==
 
+### 使用=default
 
+```c++
+class Sales_data {
+public:
+    //拷贝控制成员;使用default
+    Sales_data() = default;
+    Sales_data(const Sales_data&) = default;
+    Sales_data& operator=(const Sales_data&) = default;
+    ~Sales_data() = default;
+    //其他成员的定义,如前
+};
+```
+==我们只能对具有合成版本的成员函数使用=default==
+### 阻止拷贝
+**定义删除函数**
+我们可以通过将拷贝构造函数和拷贝赋值运算符定义为删除的函数来阻止拷贝。
+```c++
+struct NoCopy {
+    Nocopy() = default;     //使用合成的默认构造函数
+    Nocopy(const Nocopy&) = delete;   //阻止拷贝
+    Nocopy& operator=(const Nocopy&) = delete;  //阻止赋值
+    ~Nocopy() = default;    //使用合成的析构函数
+};
+```
+**析构函数不能是被删除的成员**
+```c++
+struct NoDtor {
+    NoDtor() = default;     //使用合成默认构造函数
+    ~NoDtor() = delete;     //我们不能销毁NoDtor对象
+};
+NoDtor nd;   //错误:NoDtor的析构函数是删除的
+NoDtor *p = new NoDtor();   //正确:但我们不能delete p
+delete p;   //错误:NoDtor的析构函数是删除的
+```
 
+## 13.2拷贝控制和资源管理
