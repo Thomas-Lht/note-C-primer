@@ -782,6 +782,74 @@ if(!c.empty())
 
 ## 9.5额外的string操作
 
+# 第11章 关联容器
+|关联容器类型||
+|---|---|
+|**按关键字有序保存元素**||
+|map|关联数组;保存关键字-值对|
+|set|关键字即值,即只保存关键字的容器|
+|multimap|关键字可重复出现的map|
+|multiset|关键字可重复出现的set|
+|无序集合||
+|unordered_map|用哈希函数组织的map|
+|unordered_map|用哈希函数组织的set|
+|unordered_multimap|哈希组织的map;关键字可以重复出现|
+|unordered_multiset|哈希组织的det;关键字可以重复出现|
+
+## 11.1 使用关联容器
+map类型通常被称为**关联数组**
+set是关键字的简单集合
+## 11.2 关联容器概述
+关联容器的迭代器都是双向的
+### 定义关联容器
+```c++
+map<string, size_t> word_count;     //空容器
+//列表初始化
+set<string> exclude = {"the", "but", "and", "or", "an", "a",
+                        "The", "But", "And", "Or", "An", "A"};
+//三个元素;authors将姓映射为名
+map<string, string> authors = {{"Joyce", "James"},
+                                {"Austen", "Jane"},
+                                {"Dickens", "Charles"}};
+```
+**初始化multimap或multiset**
+```c++
+//定义一个有20个元素的vector,保存0到9每个整数的两个拷贝
+vector<int> ivec;
+for(vector<int>::size_type i = 0;i != 10; ++i)
+{
+    ivec.push_back(i);
+    ivec.push_back(i);//每个数重复保存一次
+}
+//iset包含来自ivec的不重复元素;miset包含所有20个元素
+set<int> iset(ivec.cbegin(), ivec.cend());
+multiset<int> miset(ivec.cbegin(), ivec.cend());
+cout << ivec.size() << endl;    //打印出20
+cout << iset.size() << endl;    //打印出10
+cout << miset.size() << endl;   //打印出20
+```
+### 关键字类型的要求
+==传递给排序算法可调用对象必须满足与关联容器中关键字一样的类型要求==
+**有序容器的关键词类型**
+无论怎么定义比较函数，它必须具备如下性质:
+- 两个关键字不能同时“小于等于”对方;如果k1“小于等于”k2,那么k2绝对不能“小于等于”k1
+- 如果k1“小于等于”k2,且k2“小于等于”k3,那么k1必须“小于等于”k3
+- 如果存在两个关键字,任何一个都不“小于等于”另一个,那么我们称这两个关键字是“等价”的。如果k1“等价于”k2,且k2“等价于”k3,那么k1必须“等价于”k3
+
+**使用关键字类型的比较函数**
+```c++
+bool compareIsbn(const Sales_data &lhs, const Sales_data &rhs)
+{
+    return lhs.isbn() < rhs.isbn();
+}
+//bookstore中多条记录可以有相同的ISBN
+//bookstore中的元素以ISBN的顺序进行排列
+multiset<Sales_data, decltype(compareIsbn)*>
+    bookstore(compareIsbn);
+```
+当用dacltype来获得一个函数指针类型时，必须加上一个*来指出我们要使用一个给定的函数指针
+
+
 
 # 第13章 拷贝控制
 一个类通过定义五种特殊的成员函数来控制这些操作，包括:**拷贝构造函数、拷贝赋值运算符、移动构造函数、移动赋值运算符和析构函数**
