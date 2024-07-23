@@ -801,8 +801,90 @@ string s5 = s.substr(12);       //抛出一个out_of_range异常
 ### 改变string的其他方法
 string定义了两个额外的成员函数:append和replace
 ```c++
-
+string s("C++ Primer"), s2 = s;     //将s和s2初始化为"C++ Primer"
+s.insert(s.size(), " 4th Ed.")      // s == "C++ Primer 4th Ed."
+s.appand(" 4th Ed.")        //等价方法:将" 4th Ed."追加到s2; s == s2
+//将“4th”替换为“5th”的等价方法
+s.erase(11, 3);             // s == "C++ Primer Ed."
+s.insert(11, "5th");        // s == "C++ Primer 5th Ed."
+//从位置11开始,删除3个字符并插入"5th"
+s2.replace(11, 3, "5th");   //等价方法: s == s2
 ```
+
+|修改string的操作||
+|---|---|
+|s.insert(pos,args)|在pos之前插入args指定的字符。pos可以是一个下标或是一个迭代器。接受下标的版本返回一个指向s的引用;接受的迭代器的版本返回指向第一个插入字符的迭代器|
+|s.erase(pos,len)|删除从位置pos开始的len个字符。如果len被省略,则删除从pos开始直至s末尾的所有字符。返回一个指向s的引用|
+|s.assign(argx)|将s中的字符替换为args制定的字符。返回一个指向s的引用|
+|s.append(args)|将args追加到s。返回一个指向s的引用|
+|s.replace(range,args)|删除s中范围range内的字符,替换为args指定的字符。range或者是一个下标和一个长度,或者是一对指向s的迭代器。返回一个指向s的引用|
+|str|字符串str|
+|str,pos,len|str中从pos开始最多len个字|
+|cp,len|从cp指向的字符数组的前len个字符|
+|cp|cp指向以空字符串结尾的字符数组|
+|n,c|n个字符c|
+|b,e|迭代器b和e指定范围内的字符|
+|初始化列表|花括号包围的，以逗号分隔的字符列表|
+
+|replace|replace|insert|insert|args可以是|
+|---|---|---|---|---|
+|(pos,len,args)|(b,e,args)|(pos,args)|(iter,args)|
+|是|是|是|否|str|
+|是|否|是|否|str,pos,len|
+|是|是|是|否|cp,len|
+|是|是|否|否|cp|
+|是|是|是|是|n,c|
+|否|是|否|是|b2,e2|
+|否|是|否|是|初始化列表|
+
+**改变string的多种重载函数**
+assign和append函数无须指定要替换string中哪个部分:assign总是替换string中的所有内容, append总是将新字符追加到string末尾。
+
+### string搜索操作
+==string搜索函数返回string::size_type值,该类型是一个unsigned类型。因此,用一个int或其他带符号类型来保存这些函数的返回值不是一个好主意==
+
+|string搜索操作||
+|---|---|
+|s.find(args)|查找s中args第一次出现的位置|
+|s.rfind(args)|查找s中args最后一次出现的位置|
+|s.find_first_of(args)|在s中查找args中任何一个字符第一次出现的位置|
+|s.find_last_of(args)|在s中查找args中任何一个字符最后一侧出现的位置|
+|s.find_first_not_of(args)|在s中查找第一个不在args中的字符|
+|s.find_last_not_of(args)|在s中查找最后一个不在args中的字符|
+|args必须是一下形式之一||
+|c,pos|从s中位置pos开始查找字符c。pos默认为0|
+|s2,pos|从s中位置pos开始查找字符串s2。pos默认为0|
+|cp,pos|从s中位置pos开始查找指针cp指向的以空字符串结尾的C风格字符串。pos默认为0|
+|cp,pos,n|从s中位置pos开始查找指针cp指向的数组的前n个字符。pos和n无默认值|
+
+**指定在哪里开始搜索**
+```c++
+string::size_type pos = 0;
+//每步循环查找name中下一个数
+while ((pos = name.find_first_of(number, pos))
+                            != string::npos) {
+    cout << "found numbers at index: " << pos
+         << " element is " << name[pos] << endl;
+    ++pos;  //移动到下一个字符
+    }
+```
+**逆向搜索**
+- find_last_of搜索与给定string中任何一个字符匹配的最后一个字符
+- find_last_not_of搜索最后一个不出现在给定string中的字符。
+  
+### compare函数
+|s.compare的几种参数形式||
+|---|---|
+|s2|比较s和s2|
+|pos1, n1, s2|将s中从pos1开始的n1个字符与s2进行比较|
+|pos1, n1, s2, pos2, n2|将s中从pos1开始的n1个字符与s2中从pos2开始的n2个字符进行比较|
+|cp|比较s与cp指向的以空字符串结尾的字符串数组|
+|pos1, n1, cp|将s中从pos1开始的n1个字符与cp指向的以空字符串结尾的字符串数组进行比较|
+|pos1, n1, cp, n2|将s中从pos1开始的n1个字符与指针cp指向的地址开始的n2个字符进行比较|
+
+### 数值转换
+
+
 
 
 
