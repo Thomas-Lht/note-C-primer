@@ -781,6 +781,14 @@ if(!c.empty())
 |c.reverve(n)|分配至少能容纳n个元素的内存空间|
 
 ## 9.5额外的string操作
+### 构造string的其他方法
+|构造string的其他方法||
+|---|---|
+|string s(cp,n)|s是cp指向的数组中前n个字符的拷贝。此数组至少应噶u包含n个字符|
+|string s(s2,pos2)|s是string s2从下标pos2开始的字符拷贝。若pos2>s2.size(),构造函数的行为为定义|
+|string s(s2,pos2,len2)|s是string s2从下标pos2开始len2个字符拷贝。若pos2>s2.size(),构造函数行为为定义。不管len2的值是多少,构造函数至多拷贝s2.size()-pos2个字符|
+
+
 
 # 第11章 关联容器
 |关联容器类型||
