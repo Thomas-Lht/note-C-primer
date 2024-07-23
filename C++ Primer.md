@@ -788,6 +788,22 @@ if(!c.empty())
 |string s(s2,pos2)|s是string s2从下标pos2开始的字符拷贝。若pos2>s2.size(),构造函数的行为为定义|
 |string s(s2,pos2,len2)|s是string s2从下标pos2开始len2个字符拷贝。若pos2>s2.size(),构造函数行为为定义。不管len2的值是多少,构造函数至多拷贝s2.size()-pos2个字符|
 
+**substr操作**
+substr操作返回一个string,它是原始string的一部分或全部拷贝。可以传递给substr一个可选的开始位置和计数值:
+```c++
+string s("hello world");
+string s2 = s.substr(0, 5);     //s2 = hello
+string s3 = s.substr(6);        //s3 = world
+string s4 = s.substr(6, 11);    //s3 = world
+string s5 = s.substr(12);       //抛出一个out_of_range异常
+```
+
+### 改变string的其他方法
+string定义了两个额外的成员函数:append和replace
+```c++
+
+```
+
 
 
 # 第11章 关联容器
