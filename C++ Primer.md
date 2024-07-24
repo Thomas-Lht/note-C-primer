@@ -1103,3 +1103,89 @@ delete p;   //错误:NoDtor的析构函数是删除的
 ```
 
 ## 13.2拷贝控制和资源管理
+
+# 第15章 面向对象设计
+
+## 15.1 OOP:概述
+**面向对象程序设计**的核心思想是数据抽象、继承和动态绑定。
+**继承**
+通过**继承**联系在一起的类构成一种层次关系。通常在层次关系的根部有一个基类,其他类则直接或间接地从基类即成而来,这些继承得到的类称为**派生类**。
+对于某些函数,基类希望它的派生类个自定义适合自身的版本,此时基类就将这些函数声明成**虚函数**。
+```c++
+class Quote {
+public:
+    std::string isbn() const;
+    virtual double net_price(std::size_t n) const;
+}
+```
+派生类必须通过使用类派生列表明确指出他是从哪个基类继承而来的。
+```c++
+class Bulk_quote : public Quote {
+public:
+    double net_price(std::size_t n) const;
+}
+```
+**动态绑定**
+通过使用**动态绑定**,我们能用同一段代码分别处理Quote和Bulk_quote的对象。
+```c++
+//计算并打印销售给定数量的某种书籍所得的费用
+double print_total(ostream &os,
+                    const Quote &item, size_t n)
+{
+    //根据传入item形参的对象类型调用Quote::net_price
+    //或者Bulk_quote::net_price
+    double ret = item.net_price();
+    os << "ISBN： " << item.isbn()      //调用Quote::isbn
+       << " # sold: " << n << " total due:" << res << endl;
+    return ret;
+}
+```
+
+## 15.2 定义基类和派生类
+
+### 定义基类
+```c++
+class Quote {
+public: 
+    Quote() = default;
+    Quote(const std::string &book, double sales_price):
+                    bookNo(book), price(sales_price){ }
+    std::string isbn() const { return bookNo; }
+    //返回给定数量的书籍的销售总额
+    //派生类负责改写并使用不同的折扣计算方法
+    virtual double net_price(std::size_t n) const
+                        {return n * price; }
+    virtual ~Quote() = default;     //对析构函数进行动态绑定
+private:
+    std::string bookNo;
+protected:
+    double price = 0.0;             //代表普通状态下打折的价格
+};
+```
+### 定义派生类
+派生类必须通过使用**类派生列表**明确指出它是从哪个基类继承而来的。
+```c++
+class Bulk_quote() : public Quote {
+public:
+    Bulk_quote() = default;
+    Bulk_quote(const std::string&, double, std::size_t, double);
+    //覆盖基类的函数版本以实现基于大量购买的折扣力度
+    double net_price(std::size_t) const override;
+private:
+    std::size_t min_qty = 0;        //适用折扣政策的最低购买量
+    double discount = 0.0;          //以小数表示折扣额
+}
+```
+**派生类中的虚函数**
+派生类经常覆盖它继承的虚函数。如果派生类没有覆盖其基类中的某个虚函数,则该虚函数的行为类似于其他的普通成员,派生类会直接继承其所在的基类中的版本。
+**派生类对象及派生类向基类类型转换**
+因为在派生类对象中含有与其基类对应的组成部分,所以我们能把派生类的对象当成基类对象来使用而且我们也能将基类的指针或引用绑定到派生类对象中的基类部分上。
+```c++
+Quote item;         //基类对象
+Bulk_quote bulk;    //派生类对象
+Quote *p = &item;   //p指向Quote对象
+p = &bulk;          //p指向bulk的Quote部分
+Quote &r = bulk;    //r绑定到bulk的Quote部分  
+```
+这种转换通常称为**派生类到基类的**类型转换。
+==在派生类对象中含有与其基类对应的组成部分,这一事实是继承的关键所在==
