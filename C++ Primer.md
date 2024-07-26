@@ -1189,3 +1189,59 @@ Quote &r = bulk;    //r绑定到bulk的Quote部分
 ```
 这种转换通常称为**派生类到基类的**类型转换。
 ==在派生类对象中含有与其基类对应的组成部分,这一事实是继承的关键所在==
+**派生类构造函数**
+```c++
+Bulk_quote(const std::string& book, double p,
+            std::size_t qty, double disc) :
+            Quote(book, p), min_qty(qty), discount(disc){ }
+```
+**派生类使用基类成员**
+```c++
+double Bulk_quote::net_price(size_t cnt) const
+{
+    if  (cnt >= min_qty)
+    {
+        return cnt * (1 - discount) * price;
+    }
+    else
+    {
+        return cnt * price;
+    }
+}
+```
+**继承静态类成员**
+```c++
+class Base {
+public:
+    static void statmem();
+};
+class Derived : public Base {
+    void f(const Derived&);
+};
+
+void Deriverd::f(const Deriverd &deriverd_obj)
+{
+    Base::statmem();        //正确:Base定义了statmem
+    Derived::statmem();     //正确:Derived继承了statmem
+    //正确:派生类的对象能访问基类的静态成员
+    derived_obj.statmem();  //通过Derived对象访问
+    statmem();              //通过this对象访问
+}
+```
+**防止继承的发生**
+```c++
+class NoDerived final { /* */ };    //NoDerived不能作为基类
+class Base { /* */ };
+// Last是final的;我们不能即成Last
+class Last final : Base { /* */ };  //Last不能作为基类
+class Bad : NoDerived { /* */ };    //错误:NoDrived是final的
+class Bad2 : Last { /* */ };        //错误:Last是final的
+```
+==**存在继承关系的类型之间的转换规则**
+1.从派生类向基类的类型转换只对指针或引用类型有效
+2.基类和派生类不存在隐式类型转换
+3.和任何其他成员一样,派生类向基类的类型转换也可能会由于访问受限而变得不可行。==
+
+## 15.3 虚函数
+**对虚函数的调用可能在运行时才被解析**
+当某个虚函数通过指针或引用调用时,编译器产生的代码直到运行时才能确定应调用哪个版本的函数。被调用函数是与绑定到指针或引用上的对象的动态类型相匹配的那一个
