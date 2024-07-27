@@ -1245,3 +1245,128 @@ class Bad2 : Last { /* */ };        //错误:Last是final的
 ## 15.3 虚函数
 **对虚函数的调用可能在运行时才被解析**
 当某个虚函数通过指针或引用调用时,编译器产生的代码直到运行时才能确定应调用哪个版本的函数。被调用函数是与绑定到指针或引用上的对象的动态类型相匹配的那一个
+**派生类中的虚函数**
+==基类中的虚函数在派生类中隐含地也是一个虚函数。当派生类覆盖了某个虚函数时,该函数在基类中的形参必须与派生类中的形参严格匹配==
+**final和override说明符**
+```c++
+struct B {
+    virtual void fi(int) const;
+    virtual void f2();
+    void f3();
+};
+struct D1 : B {
+    void f1(int) const override;        //正确:f1与基类中的f1匹配
+    void f2(int) override;              //错误:B没有形如f2(int)的函数
+    void f3() override;                 //错误:f3不是虚函数
+    void f4() override;                 //错误:B没有名为f4的函数
+};
+```
+我们还能把某个指定函数定为final,如果我们已经把函数定义成final了,则之后任何尝试覆盖该函数的操作都将引发错误
+```c++
+struct D2 : B {
+    //从B继承f2()和f3(),覆盖f1(int)
+    void f1(int) const final;   //不允许后续的其他覆盖f1(int)
+};
+struct D3 : D2 {
+    void f2();                  //正确:覆盖从间接基类的B继承而来的f2
+    void f1(int) const;         //错误:D2已经将f2声明成final
+};
+```
+## 15.4抽象基类
+**纯虚函数**
+```c++
+//用于保存折扣和购买量的类,派生类使用这些数据可以实现不同的价格策略
+class Disk_quote : public Quote {
+public:
+    Disk_quote() = default;
+    Disk_quote(const std::string& book, double price,
+                std::size_t qty, double disc):
+        Quote(book, price),
+        quantity(qty), discount(disc)  {}
+
+    double net_price(std::size_t) const = 0;
+protected:
+    std::size_t quantity = 0;       //折扣适用的购买量
+    double discount = 0.0;          //表示折扣的小数值
+};
+```
+**含有纯虚函数的类是抽象基类**
+含有纯虚函数的类是**抽象基类**。抽象基类负责定义接口,而后续的其他类可以覆盖接口.我们不能创建一个抽象基类对象。
+```c++
+//Disc_quote声明了纯虚函数,而Bulk_quote将覆盖该函数
+Disc_quote discounted;      //错误:不能定义Disc_quote的对象
+Bulk_quote bulk;            //正确:Bulk_quote中没有纯虚函数
+```
+==我们不能创建基类的对象==
+
+## 15.5访问控制与继承
+**收保护的成员**
+- 和私有成员类似,受保护的成员对于类的用户来说是不可访问的
+- 和公有成员类似,受保护的成员对于派生类的成员和友元来说是可访问的
+- 派生类的成员或友元只能通过派生类的对象来访问基类的受保护成员。派生类对于一个基类对象中的受保护成员没有任何访问特权
+
+**公有、私有和受保护继承**
+```c++
+class Base {
+public:
+    void pub_mem();
+protected:
+    int prot_mem();
+private:
+    int priv_mem();
+};
+struct Pub_Derv : public Base {
+    //正确:派生类能i访问protected成员
+    int f() { return prot_mem ;}
+    //错误:private成员对于派生类来说是不可访问的
+    char g() {return priv_men ;}
+};
+struct Priv_Derv : private Base {
+    // private不影响派生类的访问权限
+    int f1 const { return prot_mem; }
+};
+```
+**友元和继承**
+```c++
+class Base {
+    //添加friend声明,其他成员与之前的版本一致
+    friend class Pal;       //Pal在访问Base的派生类时不具有特殊性
+};
+class Pal {
+public:
+    int f(Base b) {return b.prot_mem; }     //正确:Pal是Base的友元
+    int f2(Sneaky s) {return s.j; }         //错误:Pal不是Sneaky的友元
+    //对基类的访问权限由基类本身控制,即使对于派生类的基类部分也是如此
+    int f3(Sneaky s) { return s.prot_mem; } //正确:Pal是Base的友元
+}
+```
+==不能继承友元关系;每个类负责控制各自成员的访问权限==
+**改变个别成员的可访问性**
+```c++
+class Base {
+public:
+    std::size_t size() const { return n; }
+protected:
+    ste::size_t n;
+};
+class Derived : private Base {      //注意:private继承
+public:
+    //保持对象尺寸相关的成员访问级别
+    using Base::size;
+protected:
+    using Base::n;
+}
+```
+**默认的继承保护级别**
+```c++
+class Base { /*...*/ };
+struct D1 : Base { /*...*/ };       //默认public继承
+class D2 : Base { /*...*/ };        //默认private继承
+```
+
+## 15.6继承中的作用域
+**名字冲突与继承**
+```c++
+struct Base {
+    
+}
