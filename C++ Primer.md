@@ -1368,5 +1368,37 @@ class D2 : Base { /*...*/ };        //默认private继承
 **名字冲突与继承**
 ```c++
 struct Base {
-    
-}
+    Base(): mem(0) { }
+protected:
+    int mem;
+};
+struct Derived : Base {
+    Derived(int i): mem(i) { }      //用i初始化Derived::mem
+                                    //Base::mem进行默认初始化
+    int get_mem() { return mem; }   //返回Derived::mem
+protected:
+    int mem;                        //隐藏基类中的mem
+};
+```
+**虚函数与作用域**
+```c++
+class Base {
+public:
+    virtual int fun();
+};
+class D1 : public Base {
+public:
+    //隐藏基类的fcn,这个fcn不是虚函数
+    //D1继承了Base::fcn()的定义
+    int fcn(int);       //形参列表与Base中的fcn不一致
+    virtual void f2();  //是一个新的虚函数,在Base中不存在
+};
+class D2 : public D1 {
+public:
+    int fcn(int);       //是一个非虚函数,隐藏了D1::fcn(int)
+    int fcn();          //覆盖了Base的虚函数fcn
+    void f2();          //覆盖了D1的虚函数f2
+};
+```
+## 15.7构造函数与拷贝控制
+和其他类一样,位于继承体系中的类也需要控制当其对象执行一系列操作时发生什么样的行为,这些操作包括创建、拷贝、移动、赋值和销毁。
