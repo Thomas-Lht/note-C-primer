@@ -883,8 +883,58 @@ while ((pos = name.find_first_of(number, pos))
 |pos1, n1, cp, n2|将s中从pos1开始的n1个字符与指针cp指向的地址开始的n2个字符进行比较|
 
 ### 数值转换
+新标准中引入了多个函数，可以实现数值数据与标准库数据string之间的转换
+```c++
+int i = 42;
+string s = to_string(i);        //将整数i转换为字符表示形式
+double d = stods(s);            //将字符串s转换为浮点数
+```
+|string和数值之间的转换||
+|---|---|
+|to_string(val)|一组重载函数,返回数值val的string表示。val可以是任何算数类型。对每个浮点类型和int或更大的整型,都有相应版本的to_string。与往常一样,小整型会被提升|
+|stoi(s, p, b)<br>stol(s, p, b)<br>stoul(s, p, b)<br>stoll(s, p, b)<br>stoull(s, p, b)<br>stoull(s, p, b)|返回s的起始字串的数值,返回值类型分别为int、long、unsigned long、long long、unsigned long long。b表示转换所用的基数,默认值为10。p是size_t指针,用来保存s中第一个非数值字符的下标,p默认为0,即,函数不保存下标|
+|stof(s, p)<br>stod(s, p)<br>stold(s, p)|返回s的起始字符串的数值,返回值类型分别是float、double、long double。参数p 的作用与整数转换函数中的一样|
+## 9.6容器适配器
+|所有容器适配器都支持的操作和类型||
+|---|---|
+|size_type|一种类型,足以保存当前类型的最大对象的大小|
+|value_type|元素类型|
+|container_type|实现适配器的底层容器类型|
+|A a;|创建一个名为a的空适配器|
+|A a(c);|创建一个名为a的适配器,带有容器c的一个拷贝|
+|关系运算符|每个适配器都支持所有的关系运算符:==、！=、<、<=、>、>=这些运算符返回底层容器的比较结果|
+|a.empty()|若a包含任何元素,返回false,否则返回true|
+|a.size()|返回a中的元素数目|
+|swap(a,b)<br>a.swap(b)|交换a和b的内容,a和b必须有相同类型,包括底层容器类型也必须相同|
 
+**栈适配器**
+```c++
+stack<int> intStack     //空栈
+//填满栈
+fot (size_t ix = 0; ix != 10; ++ix)
+    intStack.push(ix);  //intStack保存0到9十个数
+while (!intStack.empty()) {  //intStack中有值就循环
+    int value = intStack.top();
+    //使用栈顶值的代码
+    intStack.pop();     //弹出栈顶元素,据需循环
+}
+```
+|为列出的栈操作||
+|---|---|
+|s.pop()|删除栈顶元素,但不返回该元素值|
+|s.push(item)<br>s.emplace(args)|创建一个新元素压入栈顶,该元素通过拷贝或移动item而来,或者有args构造|
+|s.top()|返回栈顶元素,但不将元素弹出栈|
+**队列适配器**
+|为列出的queue和priority_queue||
+|---|---|
+|q.pop()|返回queue的首元素或priority_queue的最高优先级的元素,但不返回此元素|
+|q.front()|返回首元素或尾元素,但不删除此元素|
+|q.back()|只适用于queue|
+|q.top()|返回最高优先级元素,但不删除元素|
+|q.push(item)<br>q.emplace(args)|在queue末尾或priority_queue中恰当的位置创建一个元素,其值为item,或者由args构造|
 
+# 第10章 泛型算法
+## 10.1概述
 
 
 
@@ -954,6 +1004,39 @@ multiset<Sales_data, decltype(compareIsbn)*>
     bookstore(compareIsbn);
 ```
 当用dacltype来获得一个函数指针类型时，必须加上一个*来指出我们要使用一个给定的函数指针
+### pair类型
+在介绍关联容器操作之前,我们需要了解名为pair的标准库类型,它定义在头文件utility中。
+```c++
+pair<string, string> anon;          //保存两个string
+pair<string, size_t> word_count;    //保存一个string和一个size_t
+pair<string, vector<int>>line;      //保存string和vector<int>
+```
+|pair上的操作||
+|---|---|
+|pair<T1, T2> p;|p是一个pair,两个类型分别为T1和T2的成员都进行了初始化|
+|pair<T1, T2> p(v1, v2)|p是一个成员类型为T1和T2的pair;first和second成员分别用v1和v2进行初始化|
+|pair<T1, T2> p={v1, v2};|等价于p(v1, v2)|
+|make_pair(v1, v2)|返回一个用v1和v2初始化的pair。pair类型从v1和v2的类型推断出来|
+|p.first|返回p的名为first的数据成员|
+|p.second|返回p的名为second的数据成员|
+|p1 relop p2|关系运算符(<、>、<=、>=)按字典序定义:例如,当p1.first<p2.first或!(p2.first < p1.first) && p1.second < p2.second成立时,p1 < p2为true。关系运算利用元素的<运算符来实现|
+|p1 == p2<br>p1 !=p2|当first和second成员分别相等时,两个pair相等。相等性判断利用元素的==运算符实现|
+
+## 11.3 关联容器操作
+|关联容器额外的类型别名||
+|---|---|
+|key_type|此容器类型的关键字类型|
+|mapped_type|每个关键字关联的类型;只适用于map|
+|value_type|对于set,与key_type相同<br>对于map,为pair<const key_type, mapped_type>|
+对于set类型,key_type和key_type是一样的;set中保存的值就是关键字。由于我们不能改变一个元素的关键字,因此这些pair的关键字部分是const的:
+```c++
+set<string>::value_type v1;         //v1是一个string
+set<string>::key_type v2;           //v2是一个string
+map<string, int>::value_type v3;    //v3是一个pair<const string, int>
+map<string, int>::key_map v4;       //v4是一个string
+map<>
+
+
 
 
 
