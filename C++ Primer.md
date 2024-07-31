@@ -935,6 +935,7 @@ while (!intStack.empty()) {  //intStack中有值就循环
 
 # 第10章 泛型算法
 ## 10.1概述
+大多数算法都定义在头文件algorithm中。
 
 
 
