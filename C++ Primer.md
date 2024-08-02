@@ -936,8 +936,143 @@ while (!intStack.empty()) {  //intStack中有值就循环
 # 第10章 泛型算法
 ## 10.1概述
 大多数算法都定义在头文件algorithm中。
+```c++
+int val = 42;       //我们将查找的值
+//如果在vec中找想要的元素,则返回结果指向它,否则返回结果为vec.cend()
+auto result = find(vec.cbegin(), vec.cend(), val);
+//报告结果
 
-
+cout  << "The value " << val
+      << (result == vec.cend()
+            ? " is not prensent" : " is present") << endl;
+```
+## 10.2初识泛型算法
+### 只读算法
+一些算法只会读取输入范围中的元素,而不改变元素
+```c++
+//对vec中的元素求和,和的初值是0
+int sum = accumulate(vec.cbegin(), vec.cend(), 0);
+```
+**算法和元素类型**
+accumulate将第三个参数作为求和起点,这蕴含这一个编程假定:将元素类型加到和的类型上的操作必须是可行的。
+```c++
+string sum = accumulate(v.cbegin(), v.cend(), string(""));
+```
+**操作两个序列的算法**
+另一个制度算法是equal,用于确定两个序列是否保存相同的值。
+```c++
+//roster2中的元素数目至少与roster1一样多
+equal(roster1.cbegin(), roster1.cend(), roster2.cbegin());
+```
+### 写容器的算法
+算法fill接受一对迭代器表示一个范围,还接受一个值作为第三个参数。fill将给定的这个值赋予输入序列中的每个元素。
+```c++
+fill(vec.cbegin(), vec.cend(), 0);      //将每个元素重置为0
+//容器的一个子序列设置为10
+fill(vec.cbegin(), vec.cbegin() + vec.size()/2, 10);
+```
+**算法不检查写操作**
+==向目的位置迭代器写入数据的算法假定目的位置足够大,能容纳要写入的元素。==
+**介绍back_inserter**
+一种保证算法有足够元素空间来容纳输出数据的方法是使用**插入迭代器**。back_inserter是定义在头文件interator中的一个函数。
+back_inserter接受一个指向容器的引用,返回一个与该容器绑定的插入迭代器。当我们通过此迭代器赋值时,赋值运算符会调用push_back将一个具有给定值的元素添加到容器中:
+```c++
+vector<int> vec;
+auto it = back_inserter(vec);   //通过它赋值会将元素添加到vec中
+*it = 42;   //vec中现在有一个元素,值为42
+```
+**拷贝算法**
+我们可以用copy实现内置数组的拷贝
+```c++
+int a1[] = {0,1,2,3,4,5,6,7,8,9};
+int a2[sizeof(a1)/sizeof(*a1)];     //a2与a1大小一样
+//ret指向拷贝到a2的尾元素之后的位置
+auto ret = copy(begin(a1), end(a1), a2);    //把a1的内容拷贝给a2
+```
+### 重排容器元素的算法
+**消除重复单词**
+```c++
+void elimDups(vector<string> &word)
+{
+    //按字典序排序words,以便查找单词
+    sort(words.begin(), words.end());
+    //unique重排输入范围i,使得每个单词只出现一次
+    //排列在范围的前部,返回指向不重复区域之后一个位置的迭代器
+    auto end_unique = unique(words.begin(), words.end());
+    //使用向量操作erase删除重复单词
+    words.erase(end_unique, words.end());
+}
+```
+**使用容器操作删除元素**
+为了真正地删除无用元素,我们必须使用容器操作。
+## 10.3定制操作
+### 向算法传递函数
+为了按长度重排vector,我们将使用sort的第二个版本,此版本是重载过的,它接受第三个参数,此参数是一个谓词。
+**谓词**
+谓词是一个可调用的表达式,其返回结果是一个能用作条件的值。标准库算法所使用的谓词分为两类:一元谓词和二元谓词。
+### lambda表达式
+**介绍lambda**
+我们可以向一个算法传递任何类别的**可调用对象**(函数、函数指针、重载了函数调用运算符的类以及lambda表达式)
+一个lambda表达式表示一个可调用的代码单元。我们可以将其理解为一个未命名的内联函数。与任何函数类似,一个lambda具有一个返回类型、一个参数列表和一个函数体。但与函数不同,lambda可能定义在函数内部。一个lambda表达式具有如下形式
+[capture list](parameter list) -> return type { function body }
+==如果lambda的函数体包含任何单一return语句之外的内容,且未指定返回类型,则返回void==
+**向lambda传递参数**
+```c++
+[](const string &a, const string &b)
+    { return a.size() < b.size();};
+```
+**使用捕获列表**
+```c++
+[sz](const string &a)
+    { return a.size() >= sz; };
+```
+==一个lambda只有在其捕获列表中捕获一个它所在函数中的局部变量,才能在函数体中使用该变量==
+**调用find_if**
+```c++
+//获取一个迭代器,指向第一个满足size()>= sz的元素
+auto wc = find_if(words.begin(), words.end(),
+    [sz](const string &a)
+        {return a.size() >= sz; });
+```
+**for_each**
+```c++
+//打印长大于等于给定值的单词,每个单词后面接一个空格
+for_each(wc, words.end(),
+        [](const string &s){cout << s << "";});
+cout << endl;
+```
+### lambda捕获和返回
+**值捕获**
+与参数不同,被捕获的变量的值是在lambda创建是拷贝的,而不是调用时拷贝:
+```c++
+void fcn1()
+{
+    size_t v1 = 42; //局部变量
+    //将v1拷贝到名为f的可调用对象
+    auto f = [v1]{return v1;};
+    v1 = 0;
+    auto j = f();   //j为42;f保存了我们创建它时v1的拷贝
+}
+```
+**引用捕获**
+```c++
+void fcn2()
+{
+    size_t v1 = 42; //局部变量
+    //对象f2包含v1的引用
+    auto f2 = [&v1] {return v1;};
+    v1 = 0;
+    auto j = f2();  //j为0;f2保存v1的引用,而非拷贝
+}
+```
+==当以引用方式捕获一个变量时,必须保证在lambda执行时变量是存在的==
+**隐式捕获**
+|lambda捕获列表||
+|---|---|
+|[ ]|空捕获列表。lambda不能使用所在函数中的变量。一个lambda只有捕获变量后才能使用它们|
+|[names]|names是一个逗号分隔的名字列表,这些名字都是lambda所在函数的局部变量。默认情况下,捕获列表中的变量都被拷贝。名字前如果使用了&,则采用引用捕获的方式|
+|[&]|隐式捕获列表,采用引用捕获方式。lambda体所使用的来自所在函数实体都采用引用的方式使用|
+|[=]|隐式捕获列表,采用隐式捕获方式。lambda体将拷贝所使用的来自所在函数的实体的值|
 
 # 第11章 关联容器
 |关联容器类型||
