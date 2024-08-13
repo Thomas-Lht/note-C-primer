@@ -1073,6 +1073,128 @@ void fcn2()
 |[names]|names是一个逗号分隔的名字列表,这些名字都是lambda所在函数的局部变量。默认情况下,捕获列表中的变量都被拷贝。名字前如果使用了&,则采用引用捕获的方式|
 |[&]|隐式捕获列表,采用引用捕获方式。lambda体所使用的来自所在函数实体都采用引用的方式使用|
 |[=]|隐式捕获列表,采用隐式捕获方式。lambda体将拷贝所使用的来自所在函数的实体的值|
+|[&,identifier_list]|identifier_list是一个逗号分割的列表,包含0和多个来自所在函数的变量。这些变量采用值捕获的方式,而任何隐式捕获的变量都采用引用的方式捕获。identifier_list中的名字前面不能使用&|
+|[=,identifier_list]|identifier_list中的变量都采用引用方式捕获,而任何隐式捕获的变量都采用值方式捕获。identifier_list中的名字不能包括this,且这些名字之前必须使用&|
+### 参数绑定
+**标准库bind函数**
+调用bind的一般形式
+auto *newCallable* = bind(callable,arg_list);
+其中*newCallable*本身是一个可调用对象,arg_list是一个逗号分隔的参数列表,对应给定的callable参数。即,当我们调用*newCallable*时,*newCallable*会调用callable,并传递给它arg_list中的参数。
+arg_list中的参数可能包含形如_n的名字,其中n是一个整数。这些参数是占位符,表示*newCallable*的参数,它们占据了传递给*newCallable*的参数的“位置”。
+**绑定check_size的sz参数**
+```c++
+//check6是一个可调用对象,接受一个string类型的参数
+//并用此string和值6来调用check_size
+auto check6 = bind(check_size, _1, 6);
+```
+使用bind,我们可以将原来基于lambda的find_if调用:
+```c++
+auto wc = find_if(words.begin(),words.end(),
+                [sz](const string &a);
+```
+替换为如下使用check_size的版本:
+```c++
+auto wc = find_if(words.begin(),words.end(),
+                bind(check_size, _1, sz));
+```
+**使用placeholders名字**
+```c++
+using namespace namespsace_name;
+```
+这种形式说明希望所有来自namespace_name的名字都可以在我们的程序中直接使用。
+## 10.4再探迭代器
+### 插入迭代器
+|插入迭代器操作||
+|---|---|
+|it = t|在it指定的当前位置插入值t。假扮c是it绑定的容器,依赖于插入迭代器的不同种类,此赋值会分别调用c.push_back(t)、c.push_front(t)或c.insert(t,p),其中p为传递给inseter的迭代器位置|
+|*it,++it,it++|这些操作虽然存在,但不会对it做任何事情。每个操作都返回it|
+- **back_inserter**创建一个使用push_back的迭代器
+- **front_inserter**创建一个使用push_front的迭代器
+- **inserter**创建一个使用insert的迭代器。此函数接受第二个参数,这个参数必须是一个指向给定容器的迭代器。元素将被插入到给定的迭代器所表示的元素之前
+### iostream迭代器
+|istream_iterator操作||
+|---|---|
+|istream_interator<T> in(is);|in从输入流is读取类型为T的值|
+|istream_interator<T> end;|读取类型为T的值的istream_interator迭代器,表示尾后位置|
+|in1 == in2<br>in1 != in2|in1与in2必须读取相同类型。如果它们都是尾后迭代器,或绑定到相同的输入,则两者相等|
+|*in|返回从流中读取的值|
+|in->mem|与(*in).mem的含义相同|
+|++in, in++|使用元素类型所定义的>>运算符从输入流中读取下一个值。与往常一样,前置版本返回一个指向递增后迭代器的引用,后置版本返回旧值|
+|ostream_iterator操作||
+|---|---|
+|ostream_interator<T> out(is);|out将类型为T的值写到输入流os中|
+|ostream_interator<T> out(os,d);|out将类型为T的值写到输入流os中,每个值后面都输出一个d。d指向一个空字符结尾的字符数组|
+|out = val|用<<运算符将val写入到out所绑定的ostream中。val的类型必须与out可写的类型兼容|
+|*out,++out, out++|这些运算符是存在的,但不对out做任何事情。每个运算符都返回out|
+**使用流迭代器处理类类型**
+```c++
+istream_interator<Sales_item> item_iter(cin), eof;
+ostream_interator<Sales_item> out_iter(cout,"\n");
+Sales_item sum = *item_iter++;
+while (item_iter != eof){
+    if (item_iter->isbn() ==sum.sibn())
+        sum += *item_iter++;
+    else{
+        out_iter = sum;
+        sum = *item_iter++;
+    }
+}
+out_iter = sum;
+```
+
+### 反向迭代器
+```c++
+vector<int> vec = {0,1,2,3,4,5,6,7,8,9};
+for(auto r_iter = vec.crbegin();
+        r_iter != vec.crend();
+        ++r_iter)
+    cout << *r_iter << endl;
+```
+## 10.5泛型算法结构
+|迭代器类别||
+|---|---|
+|输入迭代器|只读、不写;单遍扫描,只能递增|
+|输出迭代器|只写、不读;单遍扫描,只能递增|
+|前向迭代器|可读写;多遍扫描,只能递增|
+|双向迭代器|可读写;多遍扫描,可递增递减|
+|随机访问迭代器|可读写,多遍扫描,支持全部迭代器运算|
+### 5类迭代器
+**迭代器类别**
+**输入迭代器**
+- 用于比较两个迭代器的相等和不相等运算符
+- 用于推进迭代器的前置和后置递增运算
+- 用于读取元素的解引用运算符(*);解引用只会出现在赋值运算的右侧
+- 箭头运算符(->),等价于(*it).member,即,解引用迭代器,并提取对象的成员
+**输出迭代器**
+- 用于推进迭代器的前置和后置递增运算(++)
+- 解引用运算符(*),只出现在赋值运算的左侧
+**前向迭代器**
+**双向迭代器**
+**随机访问迭代器**
+- 用于比较两个迭代器相对位置的关系运算符
+- 迭代器和一个整数值的加减运算,计算结果是迭代器在序列中前进给定整数个元素后的位置
+- 用于两个迭代器上的减法运算,得到两个迭代器的距离
+- 下标运算符(iter[n]),与*(iter[n])等价
+### 算法的命名规范
+**一些算法使用重载形式传递一个谓词**
+```c++
+unique(beg, end);       //使用 == 比较运算符
+unique(beg, end, comp); //使用 comp比较元素
+```
+**区分拷贝元素的版本和不拷贝的版本**
+```c++
+reverse(beg, end);          //反转输入范围中的元素顺序
+reverse(beg, end, dest);    //将元素按逆序拷贝到dest
+```
+## 10.6特定容器算法
+|list和forward_list||
+|---|---|
+|lst.merge(lst2)<br>lst.merge(lst2,comp)|将来自lst2的元素合并入lst。lst和lst2都必须是有序的。元素将从lst2中删除。在合并之后,lst2变为空。第一版本使用<运算符;第二个版本使用给定的比较操作|
+|lst.remove(val)<br>lst.remove_if(pred)|调用erase删除掉与给定值相等(==)或令一元谓词为真的每个元素|
+|lst.reverse()|反转lst中的元素|
+|lst.sort()<br>lst.sort(comp)|使用<或给定比较操作排序元素|
+|lst.unique()<br>lst.unique(pred)|调用erase删除同一个值的连续拷贝。第一个版本使用==;第二个版本使用给定的二元谓词|
+
 
 # 第11章 关联容器
 |关联容器类型||
@@ -1170,9 +1292,198 @@ set<string>::value_type v1;         //v1是一个string
 set<string>::key_type v2;           //v2是一个string
 map<string, int>::value_type v3;    //v3是一个pair<const string, int>
 map<string, int>::key_map v4;       //v4是一个string
-map<>
+map<string, int>::mapped_type v5;   //v5是一个int 
 ```
+### 关联容器迭代器
+**set的迭代器是const的**
+虽然set类型同时定义了interator和const_iterator类型,但两种类型都只允许访问set中的元素。
 
+### 添加元素
+|关联容器insert操作||
+|---|---|
+|c.insert(v)<br>c.emplace(args)|v是value_type类型的对象;args用来构造一个元素<br>对于map和set,只有当元素关键字不在c中时才插入元素。函数返回一个pair,包含一个迭代器,指向具有关键字的元素,以及一个指向插入是否成功的bool值<br>对于multimap和multiset,总会插入给定元素,并返回一个指向新元素的迭代器|
+|c.insert(b, e)<br>c.insert(il)|b和e是迭代器,表示一个c::value_type类型值的范围;il是这种花括号列表。函数返回void<br>对于map和set,只插入关键字不在c中的元素。对于multimap和multiset,则会插入范围中的每个元素|
+|c.insert(p, v)<br>c.emplace(p, args)|类似insert(v),但将迭代器p作为一个提示,指出从哪里开始搜索新元素应该存储的位置。返回一个迭代器,指向具有给定关键字的元素|
+### 删除元素
+|从关联容器删除元素||
+|---|---|
+|c.erase(k)|从c中删除每个关键字为k的元素。返回一个size_type值,指出删除的元素数量|
+|c.erase(p)|从c中删除迭代器p指定的元素。p必须只想c中一个真实元素,不能等于c.end()。返回指向p之后元素的迭代器,若p指向c中的尾元素,则返回c.end()|
+|c.erase(b, e)|删除迭代器对b和e所表示的范围中的元素。返回e|
+### map的下标操作
+==对一个map使用下标操作,其行为与数组或vector上的下标操作很不相同:使用一个不在容器中的关键字作为下标,会添加一个具有此关键字的元素到map中==
+|map和unordered_map的下标操作||
+|---|---|
+|c[k]|返回关键字为k的元素;如果k不在c中,添加一个关键字为k的元素,对其进行值初始化|
+|c.at(k)|访问关键字为k的元素,带参数检查;若k不在c中,抛出一个out_of_range异常|
+### 访问元素
+|在一个关联容器中查找元素操作||
+|---|---|
+|c.find(k)|返回一个迭代器,指向第一个关键字为k的元素,若k不在容器中,则返回尾后迭代器|
+|c.count(k)|返回关键字等于k的元素数量。对于不允许重复关键字的容器,返回值永远是0和1|
+|c.lower_bound(k)|返回一个迭代器,指向第一个关键字不小于k的元素|
+|c.upper_bound(k)|返回一个迭代器,指向地一个关键字大于k的元素|
+|e.equal_range(k)|返回一个迭代器pair,表示关键字等于k的元素范围。若k不存在,pair的两个成员均等于c.end()|
+## 11.4 无序容器
+|无序容器的管理操作||
+|---|---|
+|**桶接口**||
+|c.bucket_count()|正在使用的桶的数目|
+|c.max_bucket_count()|容器中能容纳的最多桶的数量|
+|c.bucket_size(n)|第n个桶中有多少个元素|
+|c.bucket(k)|关键字为k的元素在哪个桶中|
+|**桶迭代**||
+|local_iterator|可以用来访问桶中元素的迭代器类型|
+|const_local_interator|桶迭代器的const版本|
+|c.begin(n), c.end(n)|桶n的首元素迭代器和尾后迭代器|
+|c.cbegin(n), c.cend(n)|与钱两个函数类似,但返回const_local_iterator|
+|**哈希策略**||
+|c.load_factor()|每个桶的平均元素数量,返回float值|
+|c.max_load_factor()|c试图维护的平均桶大小,返回float值。c会在需要时添加新的桶,使得load_factor<=max_load_factor|
+|c.rehash(n)|重组存储,使得bucket_count>=n且bucket_count>size/max_load_factor|
+|c.reverse(n)|重组存储,使得c可以保存n个元素且不必rehash|
+# 第12章 动态内存
+## 12.1动态内存与智能指针
+### shared_ptr类
+|shared_ptr和unique_ptr都支持的操作||
+|---|---|
+|share_ptr<T> sp<br>unique_ptr up|空智能指针,可以指向类型为T的对象|
+|p|将p用作一个条件判断,若p指向一个对象,则为true|
+|*p|解引用p,获取它指向的对象|
+|p->mem|等价于(*p).mem|
+|p.get()|返回p中保存的指针。要小心使用,若智能指针释放了其对象,返回的指针所指向的对象也就消失了|
+|swap(p, q)<br>p.swap()|交换p和q中的指针|
+
+|shared_ptr独有的操作||
+|---|---|
+|make_shared<T>(args)|返回一个shared_ptr,指向一个动态分配的类型为T的对象。使用args初始化此对象|
+|shared_ptr<T>p(q)|p是shared_ptr q的拷贝;此操作会递增q中的计数器。q中的指针必须能转化为T*|
+|p = q|p和q都是shared_ptr,所保存的指针必须能相互转换。此操作会递减p的引用次数,递增q的引用次数;若p的引用计数变为0,则将其管理的原内存释放|
+|p.unique()|若p.use_count()为1,返回true;否则返回false|
+|p.use_count()|返回与p共享对象的智能指针数量;可能很慢,主要用于调试|
+### 直接管理内存
+**使用new动态分配和初始化对象**
+```c++
+int *pi = new int;  //pi指向一个动态分配的、为初始化的无名对象
+```
+==出于与变量初始化相同的原因,对动态分配内存的对象进行初始化通常是个好主意==
+**动态分配的const对象**
+用new分配const对象是合法的
+```c++
+//分配并初始化一个const int
+const int *pci = new const int(1024);
+//分配并默认初始化一个const的空string
+const string *pcs = new const string;
+```
+**释放内存**
+我们通过**delete表达式**来将动态内存归还给系统
+### share_ptr和new结合使用
+如果我们不初始化一个智能指针,他就会被初始化为一个空指针。
+我们还可以用new返回的指针来初始化智能指针
+```c++
+shared_ptr<double> p1;  //shared_ptr可以指向一个double
+shared_ptr<int> p2(new int(42));    //p2指向一个值为42的int
+```
+|定义和改变shated_ptr的其他方法||
+|---|---|
+|shared_ptr<T> p(q)|p管理内置指针q所指向的对象;q必须指向new分配的内存,且能够转化为T*类型|
+|shared_ptr<T> p(u)|p从unique_ptr u那里接管了对象的所有权;将u置为空|
+|shated_ptr<T> p(q, d)|p接管了内置指针q所指向的对象的所有权。q必须能转化为T*类型。p将使用可调用对象d来代替delete|
+|shared_ptr<T> p(p2, d)|p是shared_ptr p2的拷贝,唯一的区别是p将可调用对象d来代替delete|
+|p.reset()<br>p.reset(q)<br>p.reset(q, d)|若p是唯一指向其对象的shared_ptr,reset会释放此对象。若传递了可选的参数内置指针q,会令p指向q,否则会将p置为空。若还传递了参数d,会将调用d而不是delete来释放q|
+
+### 智能指针和异常
+如果使用智能指针,即使程序块过早结束,智能指针类也能确保在内存不再需要时将其释放
+```c++
+void f()
+{
+    shared_ptr<int> sp(new int(42));    //分配一个对象
+    //这段代码抛出一个异常,且在f中未被捕获
+};  //在函数结束时shared_ptr自动释放内存
+```
+与之相对的,发生异常时,我们直接管理的内存是不会被释放的。如果使用内置指针管理内存,且在new之后在对应的delete之前发生了异常,则内存不会被释放
+```c++
+void f()
+{
+    int *ip =  new int(42);     //动态分配一个新对象
+    //这段代码抛出一个异常,且在f中未被捕获
+    delete ip;      //在推出之前释放内存
+};
+```
+### unique_ptr
+一个unique_ptr拥有它所指向的对象。与shared_ptr不同,某个时刻只能有一个unique_ptr指向一个给定对象。当unique_ptr被销毁时,它所指向的对象也被销毁
+与shared_ptr不同,没有类似的make_sharedi标准库函数返回一个unique_ptr。当我们定义一个unique_ptr时,需要将其绑定到一个new返回的指针上。类似shared_ptr,初始化unique_ptr必须采用直接初始化形式
+```c++
+unique_ptr<double> p1;  //可以指向一个double的unique_ptr
+unique_ptr<int> p2(new int(42));    //p2指向一个值为42的int
+```
+|unique_ptr 操作||
+|---|---|
+|unique_ptr<T> u1<br>unique<T, D> u2|空unique_ptr,可以指向类型为T的对象。u1会使用delete来释放它的指针;u2会使用一个类型为D的可调用对象来释放它的指针|
+|unique_ptr<T, D>u(d)|空unique_ptr,指向类型为T的对象,用类型为D的对象d代替delete|
+|u = nullptr|释放u指向的对象,将u置为空|
+|u.reset()<br>u.reset(q)<br>u.reset(nullptr)|释放u指向的对象<br>如果提供了内置的q,令u指向这个对象;否则将u置为空|
+### weak_ptr
+weak_ptr是一种不控制所指向对象生存期的智能指针,它指向由一个shared_ptr管理对象。
+将一个weak_ptr绑定到一个shared_ptr不会改变shared_ptr的引用计数。
+|weak_ptr||
+|---|---|
+|weak_ptr<T> w|空weak_ptr可以指向类型为T的对象|
+|weak_ptr<T> w(sp)|与shared_ptr sp指向相同对象的weak_ptr。T必须能转化为sp指向的类型|
+|w = p|p可以是一个shared_ptr或一个weak_ptr。赋值后w与p共享对象|
+|w.reset()|将w置为空|
+|w.use_count()|与w共享对象的shared_ptr数量|
+|w.expired()|若w.use_count()为0,返回true,否则返回falase|
+|w.lock()|如果expired为true,返回一个空shared_ptr;否则返回一个指向w的对象的shared_ptr|
+
+## 12.2动态数组
+### new和数组
+**分配一个数组会得到一个元素类型的指针**
+==要记住我们所说的动态数组并不是数组类型,这是很重要的==
+**初始化动态分配对象的数组**
+```c++
+int *pia = new int[10];     //10个未初始化的int
+int *pia2 = new int[10]();  //10个值初始化为0的int
+string *psa = new string[10];   //10个空string
+string *psa2 = new string[10]();    //10个空string
+```
+**动态分配一个空数组是合法的**
+```c++
+size_t n = get_size();      //get_size返回需要的元素的数目
+int* p = new int[n];        //分配数组保存元素
+for (int* q = p; q != p + n; ++q)
+    /* 处理数组 */ ;
+```
+**释放动态数组**
+```c++
+delete p;       //p必须指向一个动态分配的对象或为空
+delete [] pa;   //pa必须指向一个动态分派的数组或为空
+```
+|指向数组的unique_ptr||
+|---|---|
+|unique_ptr<T[]> u|u可以指向一个动态分配的数组,数组元素类型为T|
+|unique_ptr<T[]> u(p)|u指向内置指针p所指向的动态分配的数组,。p必须能转化为类型T*|
+|u[i]|返回u拥有的数组中位置i处的对象<br>u必须是一个数组|
+
+### allocator类
+```c++
+string *const p = new string[n];    //构造n个空string
+string s;
+string *q = p;              //p指向第一个string
+while(cin >> s && q != p +n)
+    *q++ = s;               //赋予*q一个新值
+const size_t size q - p;
+//使用数组
+delete[] p;     //p指向一个数组;记得用delete[]来释放
+```
+**allocate类**
+|标准库allocator||
+|---|---|
+|allocaor<T> a|定义了一个名为a的allocator对象,它可以为类型T的对象分配的内存|
+|a.allocate(n)|分配一段原始的、未构造的内存,保护n个类型为T的对象|
+|a.deallocate(p, n)|释放从T*指针p中地址开始的内存,这块内存保存了n个类型为T的对象;p必须是一个先前由allocate返回的指针,且n必须是p创建时所要求的大小。在调用deallocate之前,用户必须是p创建时所要求的大小。在调用deallocate之前,用户必须对每个在这块内存中创建对象调用destroy|
+|a.construct(p, args)|p必须是一个类型为T*的指针,指向一块原始内存;args被传递给类型为T的构造函数,用来在p指向内存中构造一个对象|
+|a.destroy(p)|p为T*类型的指针,此算法对p指向的对象执行析构函数|
 
 
 
@@ -1322,6 +1633,261 @@ delete p;   //错误:NoDtor的析构函数是删除的
 ```
 
 ## 13.2拷贝控制和资源管理
+### 行为像值的类
+
+```c++
+class HasPtr {
+public:
+    HashPtr(const std::string &s = std::string()):
+        ps(new std::stringz(s)), i(0) { }
+    HashPtr(const HashPtr &p):
+        ps(new std::string(*p.ps)), i(p.i) { }
+    HashPtr& operator=(const HashPtr &);
+    ~HasPtr() { delete ps; }
+private:
+    std::string *ps;
+    int i;
+}
+```
+### 定义行为像指针的类
+```c++
+class HasPtr {
+public:
+    HasPtr(const std:: sting &s = std::string()):
+        ps(new std::string(s)), i(0), use(new std::size_t(1)) {}
+    HasPtr(const HasPtr &p):
+        ps(p.ps), i(p.i), use(p.use) { ++*use; }
+    HasPtr& operator=(const HasPtr&);
+    ~HasPtr();
+private:
+    stdd::string *ps;
+    int i;
+    std::size_t *use;
+};
+```
+## 13.3交换操作
+```c++
+class HashPtr {
+    friend coid swap(HashPtr&, HashPtr&);
+};
+incline
+void swap(HashPtr &lhs, HashPtr& rhs)
+{
+    using std::swap;
+    swap(lhs.ps, rhs.ps);
+    swap(lhs.i, rhs.i);
+}
+```
+## 13.4拷贝控制示例
+
+## 13.5动态内存管理类
+
+## 13.6对象移动
+### 右值引用
+```c++
+int i = 42;
+int &r = i;         //正确:r引用i
+int &&rr = i;       //错误:不能将一个右值引用绑定到一个左值上
+int &r2 = i * 42;   //错误:i*42是一个右值
+const int &r3 = i * 42;     //正确:我们可以将一个const的引用绑定到一个右值上
+int &&rr2 = i * 42; //正确:将rr2绑定到乘法结果上
+```
+**标准库move函数**
+```c++
+int &&rr3 = std::move(rr1);
+```
+move告诉编译器:我们有一个左值,但我们希望像一个右值一样处理它。我们必须认识到,调用move就意味着承诺:除了rr1赋值或销毁它外,我们将不再使用它
+
+# 第14章 重载运算与类型转化
+## 14.1基本概念
+==当一个重载运算符是成员函数时,this绑定到左侧运算对象。成员运算符函数的显式参数数量比运算对象的数量少一个==
+**直接调用一个重载的运算符**
+```c++
+\\一个非成员运算符的函数的等价调用
+data1 + data2;              //普通的表达式
+operator+(data1, data2);    //等价的函数调用
+```
+==通常情况下,不应该重载逗号、取地址、逻辑与和逻辑或运算符==
+
+## 14.2输入和输出运算符
+
+### 重载输出运算符<<
+**Sales_data的输出运算符**
+```c++
+ostream &operator<<(ostream &os, const Sales_data &item)
+{
+    os << item.isbn() << " " << item.units_sold << " "
+       << item.revenue << " " << item.avg_price();
+    retuen os;
+}
+```
+
+### 重载输入运算符>>
+**Sales_data的输入运算符**
+```c++
+istream &operator>>(istream &is, Sales_data &item)
+{
+    double price;
+    is >> item.bookNo >> item.units_sold >> price;
+    if(is)
+        item.revenue = item.units_sold * price;
+    else
+        item = Sales_data();
+    return is;
+}
+```
+## 14.3算数和关系运算符
+```c++
+Sales_data
+operator+(const Sales_data &lhs, const Salse_data &rhs)
+{
+    Sales_data sum = lhs;
+    sum += rhs;
+    return sum;
+}
+```
+### 相等运算符
+```c++
+bool operator==(const Sales_data &lhs, const Sales_data &rhs)
+{
+    return lhs.isbn() == rhs.isbn() &&
+           lhs.units_sold == rhs.units_sold &&
+           lhs.revenue == rhs.revenue;
+}
+bool operator!=(const Sales_data &lhs, const Sales_data &rhs)
+{
+    return !(lhs == rhs);
+}
+```
+### 关系运算符
+1.定义顺序关系,令其与关联容器中对关键字的要求一致
+2.如果类同时也含有==运算符的话,则定义一种关系令其与==保持一致。特别是,如果两个对象是!=的,那么一个对象
+## 14.4赋值运算符
+```c++
+StrVec &StrVec::operator=(initializer_list<string> il)
+{
+    auto data = alloc_n_copy(il.begin(), il.end());
+    free();
+    element = data.first;
+    first_free = cap = data.second;
+    return *this;
+}
+```
+**复合重载运算符**
+```c++
+Sales_data &Sales_data::operator+=(const Sales_data &rhs)
+{
+    units_sold += rhs.units_sold;
+    revenue += rhs.revenue;
+    return this;
+}
+```
+## 14.5下标运算符
+==下标运算符必须是成员函数==
+==如果一个类包含下标运算符,则它通常会定义两个版本:一个返回普通引用,另一个是类的常量成员并且返回常量引用==
+## 14.6递增和递减运算符
+**定义前置递增/递减运算符**
+```c++
+class StrBlobPtr {
+public:
+    StrBlobPtr& operator++();
+    StrBlobPtr& operator--();
+}
+```
+==为了与内置版本保持一致,前置运算符应该返回递增和递减后对象的引用== 
+**区分前置和后置运算符**
+```c++
+class StrBlobPtr {
+public:
+    StrBlobPtr operator++(int);
+    StrBlobPtr operator--(int);
+}
+```
+==为了与内置版本保持一致,后置运算符应该返回对象的原值,返回的形式是一个值而非引用==
+## 14.7 成员访问运算符
+```c++
+class StrBlobPtr{
+public:
+    std::string& operator*() const
+    {
+        auto p = check(curr, "dereference past end");
+        return (*p)[curr];
+    }
+    std::string* operator->() const
+    {
+        return & this->operator*();
+    }
+}
+```
+==箭头运算符必须是类的成员。解引用运算符通常也是类的成员,尽管并非必须如此。==
+## 14.8函数调用运算符
+```c++
+struct absInt {
+    int operator()(int val) const {
+        return val < 0 ? -val : val;
+    }
+}
+```
+### lambda是函数对象
+```c++
+class ShorterString {
+public:
+    bool operator()(const string &s1, const string &s2) const
+    { return s1.size() < s2.size(); }
+}
+```
+### 标准库定义的函数对象
+||标准库函数对象||
+|---|---|---|
+|**算数**|**关系**|**逻辑**|
+|plus<Type>|equal_to<Type>|logical_and<Type>|
+|minus<Type>|not_equal_to<Type>|logical_or<Type>|
+|multiplies<Type>|greater<Type>|logical_noe<Type>|
+|divides<Type>|greater_equal<Type>||
+|modulus<Type>|less<Type>||
+|negate<Type>|less_equal<Type>||
+### 可调用对象与function
+C++语言中有几种可调用的对象:函数、函数指针、lambda表达式、bind创建对象以及重载了函数调用的运算符的类
+**不同类型可能具有相同的调用形式**
+```c++
+int add(int i, int j) { return i + j; }
+auto mod = [](int i, int j) { return i % j; };
+struct divide {
+    int operator()(int denominator, int divisor) {
+        return denominator / divisor;
+    }
+};
+```
+
+|function的操作||
+|function<T> f;|f是一个用来存储可调用对象的空function,这些可调用对象的调用形式应该与函数类型T相同|
+|function<T> f(nullptr);|显示地构造一个空function|
+|function<T> f(obj);|在f中存储可调用对象obj的副本|
+|f|将f作为条件:当f含有一个可调用对象为真;否则为假|
+|f(args)|调用f中的对象,参数是args|
+|result_type|该function类型的可调用对象返回的类型|
+|argument_type<br>first_argument_type<br>second_argument_type|当T有一个或两个实参时定义的类型。如果T只有一个实参,则argument_type是该类型的同义词;如果T有两个实参,则first_argument_type和second_argument_type分别代表两个实参的类型|
+## 14.9重载、类型转换与运算符
+### 类型转换运算符
+```c++
+operator type() const;
+```
+**定义含有类型转换运算符的类**
+```c++
+class SmallInt {
+public:
+    SmallInt(int i = 0): val(i)
+    {
+        if(i < 0 || i > 255)
+            throw std::out_of_range("Bad SmallInt Value");
+    }
+    operator int() const { return val; }
+private:
+    std::size_t val;
+}
+```
+### 避免有二义性的类型转换
+### 函数匹配与重载运算符
 
 # 第15章 面向对象设计
 
